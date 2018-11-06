@@ -36,6 +36,8 @@ function onConnect() {
 	// Connection succeeded; subscribe to our topic
 	mqtt.subscribe("Cyril/Temp", {qos: 0});
 	$('#topic').val("Cyril/Temp")
+	mqtt.subscribe("Cyril/Aff", {qos: 0});
+	$('#topic').val("Cyril/Aff")
 }
 function onConnectionLost(response) {
 	setTimeout(MQTTconnect, reconnectTimeout);
@@ -44,8 +46,15 @@ function onConnectionLost(response) {
 function onMessageArrived(message) {
 	var topic = message.destinationName;
 	var payload = message.payloadString;
-	$('#ws').prepend('<li>' + topic + ' = ' + payload + '</li>');
-	tempVal = parseFloat(payload);
+	if (topic == "Cyril/Temp") {
+		$('#ws').prepend('<li>' + topic + ' = ' + payload + '</li>');
+		tempVal = parseFloat(payload);
+	}
+	else if (topic == "Cyril/Aff") {
+		var dataFromDb = JSON.parse(payload);
+		traceDay(dataFromDb);
+	}
+
 };
 
 
@@ -76,7 +85,12 @@ $(document).ready(function() {
 			</ul>
 		</div>
 		<div class="col-md-8">
-			<div id="chartContainer" style="height: 370px; width:100%;"></div>
+			<div class="row">
+				<div id="chartContainer" style="height: 370px; width:100%;"></div>
+			</div>
+			<div class="row">
+				<div id="chartContainer2" style="height: 370px; width:100%;"></div>
+			</div>
 		</div>
 
 
@@ -120,6 +134,38 @@ var updateChart = function (count) {
 
 updateChart(dataLength);
 setInterval(function(){updateChart()}, updateInterval);
+
+}
+
+
+
+function traceDay(dataFromDb) {
+	var dps2 = []; // dataPoints
+	
+
+	dataFromDb.forEach(function(element) {
+		var timeArray = element.time.split(':');
+		var timeValue = 3600*timeArray[0] + 60*timeArray[1] + timeArray[2];
+		dps2.push({
+			x: parseFloat(timeValue),
+			y: parseFloat(element.temp)
+		});
+	});
+
+	var chart2 = new CanvasJS.Chart("chartContainer2", {
+		title :{
+			text: "Temperature of the Day searched"
+		},
+		axisY: {
+			includeZero: false
+		},      
+		data: [{
+			type: "line",
+			dataPoints: dps2
+		}]
+	});
+
+	chart2.render();
 
 }
 
