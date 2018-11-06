@@ -66,6 +66,7 @@ $(document).ready(function() {
 <div>
 	<button id="ButtonOn">Led ON</button>
 	<button id="ButtonOff">Led OFF</button>
+	<button id="Search">Search</button>
 </div>
 
 
@@ -130,6 +131,9 @@ $("#ButtonOn").click(function(){
 });
 $("#ButtonOff").click(function(){
 	mqtt.send('Cyril/led','OFF');
+});
+$("#Search").click(function(){
+	mqtt.send('Cyril/query','06/11/2018');
 });
 </script>
 
