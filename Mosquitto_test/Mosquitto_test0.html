@@ -202,7 +202,14 @@ $("#ButtonOff").click(function(){
 });
 $("#Search").click(function(){
 	var dateToSearch = document.getElementById("inputDate").value;
-	mqtt.send('Boraillie/query',dateToSearch);
+	var m = dateToSearch.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+	if (m) {
+		mqtt.send('Boraillie/query',dateToSearch);
+	}
+	else {
+		alert("La date doit \352tre au format JJ/MM/AAAA");
+	}
+	
 });
 </script>
 
