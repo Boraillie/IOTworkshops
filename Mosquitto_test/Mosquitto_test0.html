@@ -34,10 +34,10 @@ function MQTTconnect() {
 function onConnect() {
 	$('#status').val('Connected to host ');
 	// Connection succeeded; subscribe to our topic
-	mqtt.subscribe("Cyril/Temp", {qos: 0});
-	$('#topic').val("Cyril/Temp")
-	mqtt.subscribe("Cyril/Aff", {qos: 0});
-	$('#topic').val("Cyril/Aff")
+	mqtt.subscribe("Boraillie/Temp", {qos: 0});
+	$('#topic').val("Boraillie/Temp")
+	mqtt.subscribe("Boraillie/Aff", {qos: 0});
+	$('#topic').val("Boraillie/Aff")
 }
 function onConnectionLost(response) {
 	setTimeout(MQTTconnect, reconnectTimeout);
@@ -46,11 +46,11 @@ function onConnectionLost(response) {
 function onMessageArrived(message) {
 	var topic = message.destinationName;
 	var payload = message.payloadString;
-	if (topic == "Cyril/Temp") {
+	if (topic == "Boraillie/Temp") {
 		$('#ws').prepend('<li>' + topic + ' = ' + payload + '</li>');
 		tempVal = parseFloat(payload);
 	}
-	else if (topic == "Cyril/Aff") {
+	else if (topic == "Boraillie/Aff") {
 		var dataFromDb = JSON.parse(payload);
 		traceDay(dataFromDb);
 	}
@@ -173,13 +173,13 @@ function traceDay(dataFromDb) {
 </body>
 <script>
 $("#ButtonOn").click(function(){
-    mqtt.send('Cyril/led','ON');
+    mqtt.send('Boraillie/led','ON');
 });
 $("#ButtonOff").click(function(){
-	mqtt.send('Cyril/led','OFF');
+	mqtt.send('Boraillie/led','OFF');
 });
 $("#Search").click(function(){
-	mqtt.send('Cyril/query','06/11/2018');
+	mqtt.send('Boraillie/query','06/11/2018');
 });
 </script>
 
