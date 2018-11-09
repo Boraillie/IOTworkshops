@@ -147,10 +147,12 @@ function traceDay(dataFromDb) {
 	
 
 	dataFromDb.forEach(function(element) {
+		var dateArray = element.date.split('/');
 		var timeArray = element.time.split(':');
 		var timeValue = 3600*parseInt(timeArray[0]) + 60*parseInt(timeArray[1]) + parseInt(timeArray[2]);
 		dps2.push({
-			x: parseFloat(timeValue),
+			//x: timeValue,
+			x: new Date(dateArray[3], dateArray[1], dateArray[2], timeArray[0], timeArray[1], timeArray[2]),
 			y: parseFloat(element.temp)
 		});
 	});
@@ -161,10 +163,15 @@ function traceDay(dataFromDb) {
 		},
 		axisY: {
 			includeZero: false
+		},   
+		axisX: {
+            valueFormatString: "DD-MM-YY HH:mm:ss" ,
+            labelAngle: -50
 		},      
+
 		data: [{
 			type: "line",
-			dataPoints: dps2
+			dataPoints: dps2,
 		}]
 	});
 
