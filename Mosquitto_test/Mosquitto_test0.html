@@ -115,10 +115,11 @@ window.onload = function () {
 var dps = []; // dataPoints
 var chart = new CanvasJS.Chart("chartContainer", {
 	title :{
-		text: "TEMPERATURE \u00B0C"
+		text: "TEMP\u00C9RATURE \u00B0C"
 	},
 	axisY: {
-		includeZero: false
+		includeZero: false,
+		title: "TEMP\u00C9RATURE (\u00B0C)"
 	},      
 	data: [{
 		type: "line",
@@ -156,10 +157,12 @@ function traceDay(dataFromDb) {
 	
 
 	dataFromDb.forEach(function(element) {
+		var dateArray = element.date.split('/');
 		var timeArray = element.time.split(':');
 		var timeValue = 3600*parseInt(timeArray[0]) + 60*parseInt(timeArray[1]) + parseInt(timeArray[2]);
 		dps2.push({
-			x: parseFloat(timeValue),
+			//x: timeValue,
+			x: new Date(dateArray[2], dateArray[0], dateArray[1], timeArray[0], timeArray[1], timeArray[2]),
 			y: parseFloat(element.temp)
 		});
 	});
@@ -169,11 +172,18 @@ function traceDay(dataFromDb) {
 			text: "Temperature of the Day searched"
 		},
 		axisY: {
-			includeZero: false
+			includeZero: false,
+			title: "TEMP\u00C9RATURE (\u00B0C)"
+		},   
+		axisX: {
+            valueFormatString: "HH:mm:ss" ,
+            labelAngle: -50,
+			title: "Temps (HH:MM:SS)"
 		},      
+
 		data: [{
 			type: "line",
-			dataPoints: dps2
+			dataPoints: dps2,
 		}]
 	});
 
