@@ -74,8 +74,11 @@ $(document).ready(function() {
 
 <div>
 	<button id="ButtonOn">Led ON</button>
-	<button id="ButtonOff">Led OFF</button>
-	<button id="Search">Search</button>
+	<button id="ButtonOff">Led OFF</button><br>
+		<p>Quel jour voulez-vous surveiller ?</p>
+		<input type="text" name="inputDate" id="inputDate" />
+		<button id="Search">Search</button>
+
 </div>
 
 
@@ -179,7 +182,8 @@ $("#ButtonOff").click(function(){
 	mqtt.send('Boraillie/led','OFF');
 });
 $("#Search").click(function(){
-	mqtt.send('Boraillie/query','09/11/2018');
+	var dateToSearch = document.getElementById("inputDate").value;
+	mqtt.send('Boraillie/query',dateToSearch);
 });
 </script>
 
