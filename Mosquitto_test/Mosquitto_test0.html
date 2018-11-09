@@ -145,7 +145,7 @@ function traceDay(dataFromDb) {
 
 	dataFromDb.forEach(function(element) {
 		var timeArray = element.time.split(':');
-		var timeValue = 3600*timeArray[0] + 60*timeArray[1] + timeArray[2];
+		var timeValue = 3600*parseInt(timeArray[0]) + 60*parseInt(timeArray[1]) + parseInt(timeArray[2]);
 		dps2.push({
 			x: parseFloat(timeValue),
 			y: parseFloat(element.temp)
