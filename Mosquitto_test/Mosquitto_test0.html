@@ -11,6 +11,7 @@
 <script type="text/javascript" src="src/plugins/jqplot.json2.js"></script>
 <link rel="stylesheet" type="text/css" href="src/jquery.jqplot.css" />
 <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script type="text/javascript">
 
 var mqtt;
@@ -22,6 +23,9 @@ var accYVal;
 var accZVal;
 var dataFromDb = {Temp: [], Hum: [], Acc: []};
 
+var flagArming = 0;
+var defaultAcc;
+var sensibilityAcc = 50;
 function MQTTconnect() {
 	mqtt = new Paho.MQTT.Client("broker.hivemq.com",8000,"/mqtt","web_" + parseInt(Math.random() * 100, 10) );
 	var options = {
@@ -85,6 +89,10 @@ function onMessageArrived(message) {
 		accXVal = tableValue.x;
 		accYVal = tableValue.y;
 		accZVal = tableValue.z;
+		if (flagArming){
+			defaultAcc = tableValue;
+		}
+		else if()
 	}
 	else if (topic == "Boraillie/AffAcc") {
 		var accFromDb = JSON.parse(payload);
@@ -118,6 +126,7 @@ $(document).ready(function() {
 	<div class="col-md-4">
 		<button id="ButtonOn" type="button" class="btn btn-primary">Led ON</button>
 		<button id="ButtonOff"type="button" class="btn btn-default">Led OFF</button>
+		<button id="ButtonArming"type="button" class="btn btn-default">Arming</button>
 	</div>
 	<div class="col-md-8">
 		<label class="control-label">Quel jour voulez-vous surveiller ?</label>
@@ -142,11 +151,14 @@ $(document).ready(function() {
 			<div class="row">
 				<div id="chartContainer2" style="height: 370px; width:100%;"></div>
 			</div>
+			
 		</div>
 
 
 	</div>
 </div>
+
+
 <script>
 
 window.onload = function () {
@@ -325,11 +337,30 @@ function traceDay(dataFromDb) {
 </script>
 </body>
 <script>
+
+
 $("#ButtonOn").click(function(){
     mqtt.send('Boraillie/led','ON');
 });
 $("#ButtonOff").click(function(){
 	mqtt.send('Boraillie/led','OFF');
+});
+$("#ButtonArming").click(function(){
+	document.getElementById('ButtonArming').setAttribute('class', 'btn btn-primary');
+	mqtt.send('Boraillie/led','ON');
+	setTimeout(function(){
+	mqtt.send('Boraillie/led','OFF');
+}, 300);
+	setTimeout(function(){
+	mqtt.send('Boraillie/led','ON');
+}, 600);
+setTimeout(function(){
+	mqtt.send('Boraillie/led','OFF');
+}, 900);
+	setTimeout(function(){
+	mqtt.send('Boraillie/led','ON');
+}, 1200);
+flagArming = 1;
 });
 $("#Search").click(function(){
 	var dateToSearch = document.getElementById("inputDate").value;
