@@ -47,7 +47,6 @@
 #include "stm32_bluenrg_ble.h"
 #include "bluenrg_utils.h"
 
-
 /** @addtogroup X-CUBE-BLE1_Applications
  *  @{
  */
@@ -77,7 +76,6 @@
  */
 /* Private variables ---------------------------------------------------------*/
 extern volatile uint8_t set_connectable;
-
 //extern volatile int connected;
 //extern AxesRaw_t axes_data;
 uint8_t bnrg_expansion_board = IDB04A1; /* at startup, suppose the X-NUCLEO-IDB04A1 is used */
@@ -93,7 +91,6 @@ void User_Process(void);
 
 void initializeAllSensors(void);
 void enableAllSensors(void);
-void MX_IKS01A2_LSM6DSL_WakeUp_Process(void);
 
 /**
  * @}
@@ -110,7 +107,7 @@ int main(void)
 {
   const char *name = "BlueNRG";
   uint8_t SERVER_BDADDR[] = {0x6F, 0x34, 0x00, 0xE1, 0x80, 0x02};
-  uint8_t bdaddr[BDADDR_SIZE];		
+  uint8_t bdaddr[BDADDR_SIZE];
   uint16_t service_handle, dev_name_char_handle, appearance_char_handle;
 
   uint8_t  hwVersion;
@@ -131,7 +128,6 @@ int main(void)
 
   /* Configure LED2 */
   BSP_LED_Init(LED2);
-	
 
   /* Configure the system clock */
   SystemClock_Config();
@@ -220,7 +216,13 @@ int main(void)
   }
 
   PRINTF("SERVER: BLE Stack Initialized\n");
-
+	
+	ret = Add_Acc_Service();
+	
+  if(ret == BLE_STATUS_SUCCESS)
+    PRINTF("Acc service added successfully.\n");
+  else
+    PRINTF("Error while adding Acc service.\n");
 
   ret = Add_Environmental_Sensor_Service();
 
@@ -239,11 +241,7 @@ int main(void)
   else
     PRINTF("Error while adding LED service.\n");
 
-	
-	if(ret == BLE_STATUS_SUCCESS) PRINTF("Acc service added successfully.\n"); 
-	else
-		PRINTF("Error while adding Acc service.\n");
-	
+
   /* Set output power level */
   ret = aci_hal_set_tx_power_level(1,4);
 
@@ -266,10 +264,7 @@ void User_Process()
     setConnectable();
     set_connectable = FALSE;
   }
-	//MX_IKS01A2_LSM6DSL_WakeUp_Process();
 }
-
-
 
 /**
  * @}
