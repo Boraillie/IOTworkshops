@@ -16,6 +16,12 @@
 var mqtt;
 var reconnectTimeout = 2000;
 var tempVal;
+var humVal;
+var accXVal;
+var accYVal;
+var accZVal;
+var dataFromDb = {Temp: [], Hum: [], Acc: []};
+
 function MQTTconnect() {
 	mqtt = new Paho.MQTT.Client("broker.hivemq.com",8000,"/mqtt","web_" + parseInt(Math.random() * 100, 10) );
 	var options = {
@@ -61,22 +67,29 @@ function onMessageArrived(message) {
 	}
 	else if (topic == "Boraillie/AffTemp") {
 		var tempFromDb = JSON.parse(payload);
-		traceDay(tempFromDb);
+		dataFromDb.Temp = tempFromDb;
+		traceDay(dataFromDb);
 	}
 	else if (topic == "Boraillie/Hum") {
 		$('#ws').prepend('<li>' + topic + ' = ' + payload + '</li>');
+		humVal = parseFloat(payload);
 	}
 	else if (topic == "Boraillie/AffHum") {
 		var humFromDb = JSON.parse(payload);
-		traceDay(humFromDb);
+		dataFromDb.Hum = humFromDb;
+		traceDay(dataFromDb);
 	}
 	else if (topic == "Boraillie/Acc") {
 		var tableValue = JSON.parse(payload);
 		$('#ws').prepend('<li>' + topic + ' (x,y,z) = (' + tableValue.x + ',' + tableValue.y + ',' + tableValue.z + ') </li>');
+		accXVal = tableValue.x;
+		accYVal = tableValue.y;
+		accZVal = tableValue.z;
 	}
 	else if (topic == "Boraillie/AffAcc") {
 		var accFromDb = JSON.parse(payload);
-		traceDay(accFromDb);
+		dataFromDb.Acc = accFromDb;
+		traceDay(dataFromDb);
 	}
 
 };
@@ -124,6 +137,9 @@ $(document).ready(function() {
 				<div id="chartContainer" style="height: 370px; width:100%;"></div>
 			</div>
 			<div class="row">
+				<div id="chartContainer3" style="height: 370px; width:100%;"></div>
+			</div>
+			<div class="row">
 				<div id="chartContainer2" style="height: 370px; width:100%;"></div>
 			</div>
 		</div>
@@ -135,19 +151,63 @@ $(document).ready(function() {
 
 window.onload = function () {
 
-var dps = []; // dataPoints
+var dpsTemp = []; // dataPoints
+var dpsHum = []; // dataPoints
+var dpsX = [];
+var dpsY = [];
+var dpsZ = [];
+
 var chart = new CanvasJS.Chart("chartContainer", {
 	title :{
 		text: "TEMP\u00C9RATURE \u00B0C"
 	},
 	axisY: {
 		includeZero: false,
-		title: "TEMP\u00C9RATURE (\u00B0C)"
+		title: "Measured Value"
 	},      
 	data: [{
-		type: "line",
-		dataPoints: dps
-	}]
+			name: "Temperature",
+			type: "spline",
+			yValueFormatString: "#0.## °C",
+			showInLegend: true,
+			dataPoints: dpsTemp,
+			},
+			{
+			name: "Humidity",
+			type: "spline",
+			yValueFormatString: "#0.## %",
+			showInLegend: true,
+			dataPoints: dpsHum,
+			}
+		]
+});
+var chart3 = new CanvasJS.Chart("chartContainer3", {
+	title :{
+		text: "Live Position"
+	},
+	axisY: {
+		includeZero: false,
+		title: "Position on the axis"
+	},      
+	data: [{
+			name: "X",
+			type: "spline",
+			showInLegend: true,
+			dataPoints: dpsX,
+			},
+			{
+			name: "Y",
+			type: "spline",
+			showInLegend: true,
+			dataPoints: dpsY,
+			},
+			{
+			name: "Z",
+			type: "spline",
+			showInLegend: true,
+			dataPoints: dpsZ,
+			}
+		]
 });
 
 var xVal = 0;
@@ -156,16 +216,42 @@ var dataLength = 60; // number of dataPoints visible at any point
 
 var updateChart = function (count) {
 	
-	dps.push({
+	dpsTemp.push({
 		x: xVal,
 		y: tempVal
 	});
+	dpsHum.push({
+		x: xVal,
+		y: humVal
+	});
+	dpsX.push({
+		x: xVal,
+		y: accXVal
+	});
+	dpsY.push({
+		x: xVal,
+		y: accYVal
+	});
+	dpsZ.push({
+		x: xVal,
+		y: accZVal
+	});
 	xVal++;
-	if (dps.length > dataLength) {
-		dps.shift();
+
+	if (dpsTemp.length > dataLength) {
+		dpsTemp.shift();
+	}
+	if (dpsHum.length > dataLength) {
+		dpsHum.shift();
+	}
+	if (dpsX.length > dataLength) {
+		dpsX.shift();
+		dpsY.shift();
+		dpsZ.shift();
 	}
 
 	chart.render();
+	chart3.render();
 };
 
 updateChart(dataLength);
@@ -176,23 +262,28 @@ setInterval(function(){updateChart()}, updateInterval);
 
 
 function traceDay(dataFromDb) {
-	var dps2 = []; // dataPoints
-	
+	var dps2Temp = []; // dataPoints
+	var dps2Hum = [];
 
-	dataFromDb.forEach(function(element) {
+	dataFromDb.Temp.forEach(function(element) {
 		var dateArray = element.date.split('/');
 		var timeArray = element.time.split(':');
 		var timeValue = 3600*parseInt(timeArray[0]) + 60*parseInt(timeArray[1]) + parseInt(timeArray[2]);
-		dps2.push({
+		dps2Temp.push({
 			//x: timeValue,
 			x: new Date(dateArray[2], dateArray[0], dateArray[1], timeArray[0], timeArray[1], timeArray[2]),
 			y: parseFloat(element.temp)
 		});
-		// dps3.push({
-		// 	//x: timeValue,
-		// 	x: new Date(dateArray[2], dateArray[0], dateArray[1], timeArray[0], timeArray[1], timeArray[2]),
-		// 	y: parseFloat(element.hum)
-		// });
+	});
+	dataFromDb.Hum.forEach(function(element) {
+		var dateArray = element.date.split('/');
+		var timeArray = element.time.split(':');
+		var timeValue = 3600*parseInt(timeArray[0]) + 60*parseInt(timeArray[1]) + parseInt(timeArray[2]);
+		dps2Hum.push({
+			//x: timeValue,
+			x: new Date(dateArray[2], dateArray[0], dateArray[1], timeArray[0], timeArray[1], timeArray[2]),
+			y: parseFloat(element.hum)
+		});
 	});
 
 	var chart2 = new CanvasJS.Chart("chartContainer2", {
@@ -214,19 +305,20 @@ function traceDay(dataFromDb) {
 			type: "spline",
 			yValueFormatString: "#0.## °C",
 			showInLegend: true,
-			dataPoints: dps2,
-			}//,
-			// {
-			// name: "Humidity",
-			// type: "spline",
-			// yValueFormatString: "#0.## %",
-			// showInLegend: true,
-			// dataPoints: dps3,
-			// }
+			dataPoints: dps2Temp,
+			},
+			{
+			name: "Humidity",
+			type: "spline",
+			yValueFormatString: "#0.## %",
+			showInLegend: true,
+			dataPoints: dps2Hum,
+			}
 			]
 	});
 
-	chart2.render();
+	if (dataFromDb.Temp > 0 || dataFromDb.Hum.length > 0)
+		chart2.render();
 
 }
 
