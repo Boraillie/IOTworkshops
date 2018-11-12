@@ -41,6 +41,12 @@ function onConnect() {
 	$('#topic').val("Boraillie/AffTemp")
 	mqtt.subscribe("Boraillie/Hum", {qos: 0});
 	$('#topic').val("Boraillie/Hum")
+	mqtt.subscribe("Boraillie/AffHum", {qos: 0});
+	$('#topic').val("Boraillie/AffHum")
+	mqtt.subscribe("Boraillie/Acc", {qos: 0});
+	$('#topic').val("Boraillie/Acc")
+	mqtt.subscribe("Boraillie/AffAcc", {qos: 0});
+	$('#topic').val("Boraillie/AffAcc")
 }
 function onConnectionLost(response) {
 	setTimeout(MQTTconnect, reconnectTimeout);
@@ -54,12 +60,23 @@ function onMessageArrived(message) {
 		tempVal = parseFloat(payload);
 	}
 	else if (topic == "Boraillie/AffTemp") {
-		var dataFromDb = JSON.parse(payload);
-		traceDay(dataFromDb);
+		var tempFromDb = JSON.parse(payload);
+		traceDay(tempFromDb);
 	}
 	else if (topic == "Boraillie/Hum") {
 		$('#ws').prepend('<li>' + topic + ' = ' + payload + '</li>');
-		//tempVal = parseFloat(payload);
+	}
+	else if (topic == "Boraillie/AffHum") {
+		var humFromDb = JSON.parse(payload);
+		traceDay(humFromDb);
+	}
+	else if (topic == "Boraillie/Acc") {
+		var tableValue = JSON.parse(payload);
+		$('#ws').prepend('<li>' + topic + ' (x,y,z) = (' + tableValue.x + ',' + tableValue.y + ',' + tableValue.z + ') </li>');
+	}
+	else if (topic == "Boraillie/AffAcc") {
+		var accFromDb = JSON.parse(payload);
+		traceDay(accFromDb);
 	}
 
 };
@@ -171,15 +188,20 @@ function traceDay(dataFromDb) {
 			x: new Date(dateArray[2], dateArray[0], dateArray[1], timeArray[0], timeArray[1], timeArray[2]),
 			y: parseFloat(element.temp)
 		});
+		// dps3.push({
+		// 	//x: timeValue,
+		// 	x: new Date(dateArray[2], dateArray[0], dateArray[1], timeArray[0], timeArray[1], timeArray[2]),
+		// 	y: parseFloat(element.hum)
+		// });
 	});
 
 	var chart2 = new CanvasJS.Chart("chartContainer2", {
 		title :{
-			text: "Temperature of the Day searched"
+			text: "Data of the Day searched"
 		},
 		axisY: {
 			includeZero: false,
-			title: "TEMP\u00C9RATURE (\u00B0C)"
+			title: "Measured Value"
 		},   
 		axisX: {
             valueFormatString: "HH:mm:ss" ,
@@ -188,9 +210,20 @@ function traceDay(dataFromDb) {
 		},      
 
 		data: [{
-			type: "line",
+			name: "Temperature",
+			type: "spline",
+			yValueFormatString: "#0.## °C",
+			showInLegend: true,
 			dataPoints: dps2,
-		}]
+			}//,
+			// {
+			// name: "Humidity",
+			// type: "spline",
+			// yValueFormatString: "#0.## %",
+			// showInLegend: true,
+			// dataPoints: dps3,
+			// }
+			]
 	});
 
 	chart2.render();
