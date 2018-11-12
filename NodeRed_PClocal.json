@@ -7,6 +7,44 @@
         "info": ""
     },
     {
+        "id": "b0c768ea.dd4568",
+        "type": "tab",
+        "label": "recherche dans db",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "f89843d6.07ea4",
+        "type": "mqtt-broker",
+        "z": "",
+        "name": "",
+        "broker": "broker.hivemq.com",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": true,
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    },
+    {
+        "id": "4568d7c3.4b6ab8",
+        "type": "mongodb",
+        "z": "",
+        "hostname": "127.0.0.1",
+        "port": "27017",
+        "db": "capteurs",
+        "name": ""
+    },
+    {
         "id": "a3dfa968.0424a8",
         "type": "mqtt in",
         "z": "cfe5aa4b.f38fe8",
@@ -92,6 +130,84 @@
         "wires": []
     },
     {
+        "id": "9cbcec21.ce96a",
+        "type": "function",
+        "z": "b0c768ea.dd4568",
+        "name": "Query",
+        "func": "var query = {date:{$eq:msg.payload}};\nmsg.payload = query;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 284,
+        "y": 91,
+        "wires": [
+            [
+                "26f5e1ea.d29d1e",
+                "f631d18b.885a8",
+                "a0904e90.3ccc4"
+            ]
+        ]
+    },
+    {
+        "id": "26f5e1ea.d29d1e",
+        "type": "mongodb in",
+        "z": "b0c768ea.dd4568",
+        "mongodb": "4568d7c3.4b6ab8",
+        "name": "Find Temp",
+        "collection": "Temp",
+        "operation": "find",
+        "x": 440,
+        "y": 91,
+        "wires": [
+            [
+                "3c72ad6e.4da382",
+                "da2367e2.af48b8"
+            ]
+        ]
+    },
+    {
+        "id": "da2367e2.af48b8",
+        "type": "mqtt out",
+        "z": "b0c768ea.dd4568",
+        "name": "",
+        "topic": "Boraillie/AffTemp",
+        "qos": "",
+        "retain": "",
+        "broker": "f89843d6.07ea4",
+        "x": 711,
+        "y": 91,
+        "wires": []
+    },
+    {
+        "id": "3c72ad6e.4da382",
+        "type": "debug",
+        "z": "b0c768ea.dd4568",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 685,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "7f57572b.2f9518",
+        "type": "mqtt in",
+        "z": "b0c768ea.dd4568",
+        "name": "",
+        "topic": "Boraillie/query",
+        "qos": "2",
+        "broker": "f89843d6.07ea4",
+        "x": 123,
+        "y": 91,
+        "wires": [
+            [
+                "9cbcec21.ce96a"
+            ]
+        ]
+    },
+    {
         "id": "fb6fda02.76b8a8",
         "type": "mqtt in",
         "z": "cfe5aa4b.f38fe8",
@@ -126,7 +242,7 @@
         "type": "function",
         "z": "cfe5aa4b.f38fe8",
         "name": "Ajout date",
-        "func": "var date = new Date();\nmsg.payload = {temp: msg.payload, date: date.toLocaleDateString(), time: date.toLocaleTimeString()};\nreturn msg;",
+        "func": "var date = new Date();\nmsg.payload = {hum: msg.payload, date: date.toLocaleDateString(), time: date.toLocaleTimeString()};\nreturn msg;",
         "outputs": 1,
         "noerr": 0,
         "x": 459,
@@ -177,34 +293,176 @@
         "wires": []
     },
     {
-        "id": "f89843d6.07ea4",
-        "type": "mqtt-broker",
-        "z": "",
-        "name": "",
-        "broker": "broker.hivemq.com",
-        "port": "1883",
-        "clientid": "",
-        "usetls": false,
-        "compatmode": true,
-        "keepalive": "60",
-        "cleansession": true,
-        "birthTopic": "",
-        "birthQos": "0",
-        "birthPayload": "",
-        "closeTopic": "",
-        "closeQos": "0",
-        "closePayload": "",
-        "willTopic": "",
-        "willQos": "0",
-        "willPayload": ""
+        "id": "f631d18b.885a8",
+        "type": "mongodb in",
+        "z": "b0c768ea.dd4568",
+        "mongodb": "4568d7c3.4b6ab8",
+        "name": "Find Hum",
+        "collection": "Hum",
+        "operation": "find",
+        "x": 434,
+        "y": 279,
+        "wires": [
+            [
+                "982b89ee.06fea8",
+                "98177245.839c9"
+            ]
+        ]
     },
     {
-        "id": "4568d7c3.4b6ab8",
-        "type": "mongodb",
-        "z": "",
-        "hostname": "127.0.0.1",
-        "port": "27017",
-        "db": "capteurs",
-        "name": ""
+        "id": "98177245.839c9",
+        "type": "mqtt out",
+        "z": "b0c768ea.dd4568",
+        "name": "",
+        "topic": "Boraillie/AffHum",
+        "qos": "",
+        "retain": "",
+        "broker": "f89843d6.07ea4",
+        "x": 705,
+        "y": 279,
+        "wires": []
+    },
+    {
+        "id": "982b89ee.06fea8",
+        "type": "debug",
+        "z": "b0c768ea.dd4568",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 689,
+        "y": 208,
+        "wires": []
+    },
+    {
+        "id": "57c0e01e.10748",
+        "type": "mqtt in",
+        "z": "cfe5aa4b.f38fe8",
+        "name": "",
+        "topic": "Boraillie/Acc",
+        "qos": "2",
+        "broker": "f89843d6.07ea4",
+        "x": 128,
+        "y": 564,
+        "wires": [
+            [
+                "886729c8.faf7a8"
+            ]
+        ]
+    },
+    {
+        "id": "1a6e932e.e2bc6d",
+        "type": "debug",
+        "z": "cfe5aa4b.f38fe8",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "x": 698,
+        "y": 484,
+        "wires": []
+    },
+    {
+        "id": "20facb41.0c0c04",
+        "type": "function",
+        "z": "cfe5aa4b.f38fe8",
+        "name": "Ajout date",
+        "func": "var date = new Date();\nmsg.payload = {acc: msg.payload, date: date.toLocaleDateString(), time: date.toLocaleTimeString()};\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 458,
+        "y": 564,
+        "wires": [
+            [
+                "1a6e932e.e2bc6d",
+                "8c99c575.561b38"
+            ]
+        ]
+    },
+    {
+        "id": "886729c8.faf7a8",
+        "type": "delay",
+        "z": "cfe5aa4b.f38fe8",
+        "name": "filtrage",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "10",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "x": 288,
+        "y": 564,
+        "wires": [
+            [
+                "20facb41.0c0c04"
+            ]
+        ]
+    },
+    {
+        "id": "8c99c575.561b38",
+        "type": "mongodb out",
+        "z": "cfe5aa4b.f38fe8",
+        "mongodb": "4568d7c3.4b6ab8",
+        "name": "insert Acc",
+        "collection": "Acc",
+        "payonly": true,
+        "upsert": false,
+        "multi": false,
+        "operation": "insert",
+        "x": 698,
+        "y": 564,
+        "wires": []
+    },
+    {
+        "id": "a0904e90.3ccc4",
+        "type": "mongodb in",
+        "z": "b0c768ea.dd4568",
+        "mongodb": "4568d7c3.4b6ab8",
+        "name": "Find Acc",
+        "collection": "Acc",
+        "operation": "find",
+        "x": 434,
+        "y": 440,
+        "wires": [
+            [
+                "1b4dc5a4.6e5dea",
+                "e88e3a28.67fe88"
+            ]
+        ]
+    },
+    {
+        "id": "e88e3a28.67fe88",
+        "type": "mqtt out",
+        "z": "b0c768ea.dd4568",
+        "name": "",
+        "topic": "Boraillie/AffHum",
+        "qos": "",
+        "retain": "",
+        "broker": "f89843d6.07ea4",
+        "x": 705,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "1b4dc5a4.6e5dea",
+        "type": "debug",
+        "z": "b0c768ea.dd4568",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 689,
+        "y": 369,
+        "wires": []
     }
 ]
