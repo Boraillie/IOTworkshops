@@ -1,0 +1,210 @@
+[
+    {
+        "id": "cfe5aa4b.f38fe8",
+        "type": "tab",
+        "label": "ecriture dans db",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "a3dfa968.0424a8",
+        "type": "mqtt in",
+        "z": "cfe5aa4b.f38fe8",
+        "name": "",
+        "topic": "Boraillie/Temp",
+        "qos": "2",
+        "broker": "f89843d6.07ea4",
+        "x": 130,
+        "y": 160,
+        "wires": [
+            [
+                "c1f718e8.68ec88"
+            ]
+        ]
+    },
+    {
+        "id": "702d6fe5.0f319",
+        "type": "debug",
+        "z": "cfe5aa4b.f38fe8",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "x": 700,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "5b326526.55c53c",
+        "type": "function",
+        "z": "cfe5aa4b.f38fe8",
+        "name": "Ajout date",
+        "func": "var date = new Date();\nmsg.payload = {temp: msg.payload, date: date.toLocaleDateString(), time: date.toLocaleTimeString()};\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 460,
+        "y": 160,
+        "wires": [
+            [
+                "702d6fe5.0f319",
+                "f647c3e2.9c5d2"
+            ]
+        ]
+    },
+    {
+        "id": "c1f718e8.68ec88",
+        "type": "delay",
+        "z": "cfe5aa4b.f38fe8",
+        "name": "filtrage",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "10",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "x": 290,
+        "y": 160,
+        "wires": [
+            [
+                "5b326526.55c53c"
+            ]
+        ]
+    },
+    {
+        "id": "f647c3e2.9c5d2",
+        "type": "mongodb out",
+        "z": "cfe5aa4b.f38fe8",
+        "mongodb": "4568d7c3.4b6ab8",
+        "name": "insert Temp",
+        "collection": "Temp",
+        "payonly": true,
+        "upsert": false,
+        "multi": false,
+        "operation": "insert",
+        "x": 710,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "fb6fda02.76b8a8",
+        "type": "mqtt in",
+        "z": "cfe5aa4b.f38fe8",
+        "name": "",
+        "topic": "Boraillie/Hum",
+        "qos": "2",
+        "broker": "f89843d6.07ea4",
+        "x": 129,
+        "y": 352,
+        "wires": [
+            [
+                "536f57f5.ebe3b8"
+            ]
+        ]
+    },
+    {
+        "id": "db764186.02016",
+        "type": "debug",
+        "z": "cfe5aa4b.f38fe8",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "x": 699,
+        "y": 272,
+        "wires": []
+    },
+    {
+        "id": "355d03ca.48665c",
+        "type": "function",
+        "z": "cfe5aa4b.f38fe8",
+        "name": "Ajout date",
+        "func": "var date = new Date();\nmsg.payload = {temp: msg.payload, date: date.toLocaleDateString(), time: date.toLocaleTimeString()};\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 459,
+        "y": 352,
+        "wires": [
+            [
+                "db764186.02016",
+                "fd4f35c2.a8eb38"
+            ]
+        ]
+    },
+    {
+        "id": "536f57f5.ebe3b8",
+        "type": "delay",
+        "z": "cfe5aa4b.f38fe8",
+        "name": "filtrage",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "10",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "x": 289,
+        "y": 352,
+        "wires": [
+            [
+                "355d03ca.48665c"
+            ]
+        ]
+    },
+    {
+        "id": "fd4f35c2.a8eb38",
+        "type": "mongodb out",
+        "z": "cfe5aa4b.f38fe8",
+        "mongodb": "4568d7c3.4b6ab8",
+        "name": "insert Hum",
+        "collection": "Hum",
+        "payonly": true,
+        "upsert": false,
+        "multi": false,
+        "operation": "insert",
+        "x": 709,
+        "y": 352,
+        "wires": []
+    },
+    {
+        "id": "f89843d6.07ea4",
+        "type": "mqtt-broker",
+        "z": "",
+        "name": "",
+        "broker": "broker.hivemq.com",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": true,
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    },
+    {
+        "id": "4568d7c3.4b6ab8",
+        "type": "mongodb",
+        "z": "",
+        "hostname": "127.0.0.1",
+        "port": "27017",
+        "db": "capteurs",
+        "name": ""
+    }
+]
