@@ -11,6 +11,7 @@
 .\stm32l053r8_nucleo\hci.o: ..\..\..\..\..\..\Middlewares\ST\STM32_BlueNRG\SimpleBlueNRG_HCI\includes\hci.h
 .\stm32l053r8_nucleo\hci.o: ..\..\..\..\..\..\Middlewares\ST\STM32_BlueNRG\SimpleBlueNRG_HCI\includes\ble_list.h
 .\stm32l053r8_nucleo\hci.o: ..\..\..\..\..\..\Middlewares\ST\STM32_BlueNRG\SimpleBlueNRG_HCI\includes\gp_timer.h
+.\stm32l053r8_nucleo\hci.o: ..\..\Inc\bluenrg_interface.h
 .\stm32l053r8_nucleo\hci.o: ..\..\..\..\..\..\Drivers\BSP\X-NUCLEO-IDB04A1\stm32_bluenrg_ble.h
 .\stm32l053r8_nucleo\hci.o: ..\..\..\..\..\..\Drivers\STM32L0xx_HAL_Driver\Inc\stm32l0xx_hal.h
 .\stm32l053r8_nucleo\hci.o: ..\..\Inc\stm32l0xx_hal_conf.h
