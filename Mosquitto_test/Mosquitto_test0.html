@@ -23,7 +23,8 @@ var accYVal;
 var accZVal;
 var dataFromDb = {Temp: [], Hum: [], Acc: []};
 
-var flagArming = 0;
+var arming = 0;
+var armed = 0;
 var defaultAcc;
 var sensibilityAcc = 50;
 function MQTTconnect() {
@@ -89,10 +90,17 @@ function onMessageArrived(message) {
 		accXVal = tableValue.x;
 		accYVal = tableValue.y;
 		accZVal = tableValue.z;
-		if (flagArming){
+		if (arming){
 			defaultAcc = tableValue;
+			armed = true;
+			arming = false;
 		}
-		else if()
+		else if(armed && Math.sqrt(Math.pow((defaultAcc.x-tableValue.x), 2) + Math.pow((defaultAcc.y-tableValue.y), 2) + Math.pow((defaultAcc.z-tableValue.z), 2)) > sensibilityAcc) {
+			armed = false;
+			document.getElementById('ButtonArming').setAttribute('class', 'btn btn-default');
+			console.log("ALERTE !!");
+			mqtt.send('Boraillie/led','OFF');
+		}
 	}
 	else if (topic == "Boraillie/AffAcc") {
 		var accFromDb = JSON.parse(payload);
@@ -360,7 +368,7 @@ setTimeout(function(){
 	setTimeout(function(){
 	mqtt.send('Boraillie/led','ON');
 }, 1200);
-flagArming = 1;
+	arming = true;
 });
 $("#Search").click(function(){
 	var dateToSearch = document.getElementById("inputDate").value;
