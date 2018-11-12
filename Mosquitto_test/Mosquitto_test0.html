@@ -39,6 +39,8 @@ function onConnect() {
 	$('#topic').val("Boraillie/Temp")
 	mqtt.subscribe("Boraillie/Aff", {qos: 0});
 	$('#topic').val("Boraillie/Aff")
+	mqtt.subscribe("Boraillie/Hum", {qos: 0});
+	$('#topic').val("Boraillie/Hum")
 }
 function onConnectionLost(response) {
 	setTimeout(MQTTconnect, reconnectTimeout);
@@ -54,6 +56,10 @@ function onMessageArrived(message) {
 	else if (topic == "Boraillie/Aff") {
 		var dataFromDb = JSON.parse(payload);
 		traceDay(dataFromDb);
+	}
+	else if (topic == "Boraillie/Hum") {
+		$('#ws').prepend('<li>' + topic + ' = ' + payload + '</li>');
+		//tempVal = parseFloat(payload);
 	}
 
 };
