@@ -37,8 +37,8 @@ function onConnect() {
 	// Connection succeeded; subscribe to our topic
 	mqtt.subscribe("Boraillie/Temp", {qos: 0});
 	$('#topic').val("Boraillie/Temp")
-	mqtt.subscribe("Boraillie/Aff", {qos: 0});
-	$('#topic').val("Boraillie/Aff")
+	mqtt.subscribe("Boraillie/AffTemp", {qos: 0});
+	$('#topic').val("Boraillie/AffTemp")
 	mqtt.subscribe("Boraillie/Hum", {qos: 0});
 	$('#topic').val("Boraillie/Hum")
 }
@@ -53,7 +53,7 @@ function onMessageArrived(message) {
 		$('#ws').prepend('<li>' + topic + ' = ' + payload + '</li>');
 		tempVal = parseFloat(payload);
 	}
-	else if (topic == "Boraillie/Aff") {
+	else if (topic == "Boraillie/AffTemp") {
 		var dataFromDb = JSON.parse(payload);
 		traceDay(dataFromDb);
 	}
