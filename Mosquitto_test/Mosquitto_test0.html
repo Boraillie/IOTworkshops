@@ -25,6 +25,7 @@ var dataFromDb = {Temp: [], Hum: [], Acc: []};
 
 var arming = 0;
 var armed = 0;
+var intrusion = false;
 var defaultAcc;
 var sensibilityAcc = 50;
 function MQTTconnect() {
@@ -43,21 +44,25 @@ function MQTTconnect() {
 	mqtt.onMessageArrived = onMessageArrived;
 	client = mqtt.connect(options);
 }
+
+
 function onConnect() {
 	$('#status').val('Connected to host ');
 	// Connection succeeded; subscribe to our topic
 	mqtt.subscribe("Boraillie/Temp", {qos: 0});
-	$('#topic').val("Boraillie/Temp")
+	//$('#topic').val("Boraillie/Temp")
 	mqtt.subscribe("Boraillie/AffTemp", {qos: 0});
-	$('#topic').val("Boraillie/AffTemp")
+	//$('#topic').val("Boraillie/AffTemp")
 	mqtt.subscribe("Boraillie/Hum", {qos: 0});
-	$('#topic').val("Boraillie/Hum")
+	//$('#topic').val("Boraillie/Hum")
 	mqtt.subscribe("Boraillie/AffHum", {qos: 0});
-	$('#topic').val("Boraillie/AffHum")
+	//$('#topic').val("Boraillie/AffHum")
 	mqtt.subscribe("Boraillie/Acc", {qos: 0});
-	$('#topic').val("Boraillie/Acc")
+	//$('#topic').val("Boraillie/Acc")
 	mqtt.subscribe("Boraillie/AffAcc", {qos: 0});
-	$('#topic').val("Boraillie/AffAcc")
+	//$('#topic').val("Boraillie/AffAcc")
+	$('#topic').val("Boraillie : AffAcc, Acc, AffHum, Hum, AffTemp, Temp")
+
 }
 function onConnectionLost(response) {
 	setTimeout(MQTTconnect, reconnectTimeout);
@@ -78,6 +83,7 @@ function onMessageArrived(message) {
 	else if (topic == "Boraillie/Hum") {
 		$('#ws').prepend('<li>' + topic + ' = ' + payload + '</li>');
 		humVal = parseFloat(payload);
+		
 	}
 	else if (topic == "Boraillie/AffHum") {
 		var humFromDb = JSON.parse(payload);
@@ -98,8 +104,30 @@ function onMessageArrived(message) {
 		else if(armed && Math.sqrt(Math.pow((defaultAcc.x-tableValue.x), 2) + Math.pow((defaultAcc.y-tableValue.y), 2) + Math.pow((defaultAcc.z-tableValue.z), 2)) > sensibilityAcc) {
 			armed = false;
 			document.getElementById('ButtonArming').setAttribute('class', 'btn btn-default');
-			alert("/!\\ Alerte intrusion !! /!\\ ");
-			mqtt.send('Boraillie/led','OFF');
+			intrusion = true
+		}
+		if(intrusion){
+			$('#pb').val("INTRUSION")
+			setTimeout(function(){
+				mqtt.send('Boraillie/led','OFF');
+			}, 300);
+			setTimeout(function(){
+				mqtt.send('Boraillie/led','ON');
+			}, 600);
+		}
+		else{
+			if(humVal > 60 && tempVal > 27){
+				$('#pb').val("Probleme d'humidite et de temperature")
+			}
+			else if(humVal > 60 && tempVal <= 27){
+				$('#pb').val("Probleme d'humidite")
+			}
+			else if(humVal <= 60 && tempVal > 27){
+				$('#pb').val("Probleme de temperature")
+			}
+			else{
+				$('#pb').val("RAS")
+			}
 		}
 	}
 	else if (topic == "Boraillie/AffAcc") {
@@ -126,6 +154,8 @@ $(document).ready(function() {
 				<input id="topic" class="form-control" disabled="disabled" type="text" />
 				<label class="control-label">Status:</label>
 				<input id="status" size="60" class="form-control" disabled="enable" type="text" />
+				<label class="control-label">Problemes :</label>
+				<input id="pb" size="60" class="form-control" disabled="enable" type="text" />
 			</div>
 		</div>
 
@@ -369,6 +399,7 @@ setTimeout(function(){
 	mqtt.send('Boraillie/led','ON');
 }, 1200);
 	arming = true;
+	intrusion = false;
 });
 $("#Search").click(function(){
 	var dateToSearch = document.getElementById("inputDate").value;
