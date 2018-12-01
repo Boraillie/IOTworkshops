@@ -389,6 +389,7 @@ $("#ButtonOff").click(function(){
 });
 $("#ButtonArming").click(function(){
 	document.getElementById('ButtonArming').setAttribute('class', 'btn btn-primary');
+	mqtt.send('Boraillie/arming','1');
 	mqtt.send('Boraillie/led','ON');
 	setTimeout(function(){
 	mqtt.send('Boraillie/led','OFF');
