@@ -105,9 +105,9 @@ function onMessageArrived(message) {
 			armed = false;
 			document.getElementById('ButtonArming').setAttribute('class', 'btn btn-default');
 			intrusion = true
-			const url='https://maker.ifttt.com/trigger/intrusion/with/key/b2S5yxtWCcmYvI2C4v1LMv';
-			var win = window.open(url, '1366002941508','width=500,height=200,left=375,top=330');
-			setTimeout(function () { win.close();}, 1000);
+			//const url='https://maker.ifttt.com/trigger/intrusion/with/key/b2S5yxtWCcmYvI2C4v1LMv';
+			//var win = window.open(url, '1366002941508','width=500,height=200,left=375,top=330');
+			//setTimeout(function () { win.close();}, 1000);
 			
 		}
 		if(intrusion){
@@ -389,6 +389,7 @@ $("#ButtonOff").click(function(){
 });
 $("#ButtonArming").click(function(){
 	document.getElementById('ButtonArming').setAttribute('class', 'btn btn-primary');
+	mqtt.send('Boraillie/arming','1');
 	mqtt.send('Boraillie/led','ON');
 	setTimeout(function(){
 	mqtt.send('Boraillie/led','OFF');
