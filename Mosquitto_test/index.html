@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Louvre Security - Gardien Boraillie</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom fonts for this template -->
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="css/grayscale.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="img/images.png" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="mqttws31.js" type="text/javascript"></script>
+    <script src="jquery.min.js" type="text/javascript"></script>
+    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"> -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="src/jquery.jqplot.js"></script>
+    <script type="text/javascript" src="src/plugins/jqplot.json2.js"></script>
+    <link rel="stylesheet" type="text/css" href="src/jquery.jqplot.css" />
+    <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script type="text/javascript">
+        var mqtt;
+        var reconnectTimeout = 2000;
+        var tempVal;
+        var humVal;
+        var accXVal;
+        var accYVal;
+        var accZVal;
+        var dataFromDb = {
+            Temp: [],
+            Hum: [],
+            Acc: []
+        };
+
+        var arming = 0;
+        var armed = 0;
+        var intrusion = false;
+        var defaultAcc;
+        var sensibilityAcc = 50;
+
+        function MQTTconnect() {
+            mqtt = new Paho.MQTT.Client("broker.hivemq.com", 8000, "/mqtt", "web_" + parseInt(Math.random() * 100, 10));
+            var options = {
+                timeout: 3,
+                useSSL: false,
+                cleanSession: true,
+                onSuccess: onConnect,
+                onFailure: function(message) {
+                    $('#status').val("Connection failed: " + message.errorMessage + "Retrying");
+                    setTimeout(MQTTconnect, reconnectTimeout);
+                }
+            };
+            mqtt.onConnectionLost = onConnectionLost;
+            mqtt.onMessageArrived = onMessageArrived;
+            client = mqtt.connect(options);
+        }
+
+
+        function onConnect() {
+            $('#status').val('Connected to host ');
+            // Connection succeeded; subscribe to our topic
+            mqtt.subscribe("Boraillie/Temp", {
+                qos: 0
+            });
+            //$('#topic').val("Boraillie/Temp")
+            mqtt.subscribe("Boraillie/AffTemp", {
+                qos: 0
+            });
+            //$('#topic').val("Boraillie/AffTemp")
+            mqtt.subscribe("Boraillie/Hum", {
+                qos: 0
+            });
+            //$('#topic').val("Boraillie/Hum")
+            mqtt.subscribe("Boraillie/AffHum", {
+                qos: 0
+            });
+            //$('#topic').val("Boraillie/AffHum")
+            mqtt.subscribe("Boraillie/Acc", {
+                qos: 0
+            });
+            //$('#topic').val("Boraillie/Acc")
+            mqtt.subscribe("Boraillie/AffAcc", {
+                qos: 0
+            });
+            //$('#topic').val("Boraillie/AffAcc")
+            $('#topic').val("Boraillie : AffAcc, Acc, AffHum, Hum, AffTemp, Temp")
+
+        }
+
+        function onConnectionLost(response) {
+            setTimeout(MQTTconnect, reconnectTimeout);
+            $('#status').val("connection lost: " + response.errorMessage + ". Reconnecting");
+        };
+
+        function onMessageArrived(message) {
+            var topic = message.destinationName;
+            var payload = message.payloadString;
+            if (topic == "Boraillie/Temp") {
+                $('#ws').prepend('<li>' + topic + ' = ' + payload + '</li>');
+                tempVal = parseFloat(payload);
+            } else if (topic == "Boraillie/AffTemp") {
+                var tempFromDb = JSON.parse(payload);
+                dataFromDb.Temp = tempFromDb;
+                traceDay(dataFromDb);
+            } else if (topic == "Boraillie/Hum") {
+                $('#ws').prepend('<li>' + topic + ' = ' + payload + '</li>');
+                humVal = parseFloat(payload);
+
+            } else if (topic == "Boraillie/AffHum") {
+                var humFromDb = JSON.parse(payload);
+                dataFromDb.Hum = humFromDb;
+                traceDay(dataFromDb);
+            } else if (topic == "Boraillie/Acc") {
+                var tableValue = JSON.parse(payload);
+                $('#ws').prepend('<li>' + topic + ' (x,y,z) = (' + tableValue.x + ',' + tableValue.y + ',' + tableValue.z + ') </li>');
+                accXVal = tableValue.x;
+                accYVal = tableValue.y;
+                accZVal = tableValue.z;
+                if (arming) {
+                    defaultAcc = tableValue;
+                    armed = true;
+                    arming = false;
+                } else if (armed && Math.sqrt(Math.pow((defaultAcc.x - tableValue.x), 2) + Math.pow((defaultAcc.y - tableValue.y), 2) + Math.pow((defaultAcc.z - tableValue.z), 2)) > sensibilityAcc) {
+                    armed = false;
+                    document.getElementById('ButtonArming').setAttribute('class', 'btn btn-default');
+                    intrusion = true
+                        //const url='https://maker.ifttt.com/trigger/intrusion/with/key/b2S5yxtWCcmYvI2C4v1LMv';
+                        //var win = window.open(url, '1366002941508','width=500,height=200,left=375,top=330');
+                        //setTimeout(function () { win.close();}, 1000);
+
+                }
+                if (intrusion) {
+                    $('#pb').val("INTRUSION")
+                    setTimeout(function() {
+                        mqtt.send('Boraillie/led', 'OFF');
+                    }, 300);
+                    setTimeout(function() {
+                        mqtt.send('Boraillie/led', 'ON');
+                    }, 600);
+                } else {
+                    if (humVal > 60 && tempVal > 27) {
+                        $('#pb').val("Probleme d'humidite et de temperature")
+                    } else if (humVal > 60 && tempVal <= 27) {
+                        $('#pb').val("Probleme d'humidite")
+                    } else if (humVal <= 60 && tempVal > 27) {
+                        $('#pb').val("Probleme de temperature")
+                    } else {
+                        $('#pb').val("RAS")
+                    }
+                }
+            } else if (topic == "Boraillie/AffAcc") {
+                var accFromDb = JSON.parse(payload);
+                dataFromDb.Acc = accFromDb;
+                traceDay(dataFromDb);
+            }
+
+        };
+
+
+        $(document).ready(function() {
+            MQTTconnect();
+        });
+    </script>
+
+</head>
+
+<body id="page-top">
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
+        <div class="container">
+            <a class="navbar-brand js-scroll-trigger" href="#page-top">Gardien Boraillie</a>
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+          Menu
+          <i class="fas fa-bars"></i>
+        </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link js-scroll-trigger" href="#arming">Connexion et Armement</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link js-scroll-trigger" href="#live">Surveillance temps réel</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link js-scroll-trigger" href="#pastdata">Bilan d'une journée passée</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="masthead">
+        <div class="container d-flex h-100 align-items-center">
+            <div class="mx-auto text-center">
+                <h1 class="mx-auto my-0 text-uppercase">Louvre Security</h1>
+                <h2 class="text-white-50 mx-auto mt-2 mb-5">Surveillance de la Joconde</h2>
+                <a href="#arming" class="btn btn-primary js-scroll-trigger">Se Connecter au système</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- About Section -->
+    <section id="arming" class="about-section text-center" style="padding-top:7em; padding-bottom:7em;">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <h2 class="text-white mb-0">Connexion et Armement</h2>
+
+                    <label class="text-white-50">Subscribed to</label>
+                    <input id="topic" class="form-control" disabled="disabled" type="text" />
+                    <label class="text-white-50 mt-2">Status</label>
+                    <input id="status" size="60" class="form-control" disabled="enable" type="text" />
+                    <label class="text-white-50 mt-2">Warnings and Errors</label>
+                    <input id="pb" size="60" class="form-control" disabled="enable" type="text" />
+
+                    <div class="mt-4">
+                        <button id="ButtonOn" type="button" class="btn btn-primary">Led ON</button>
+                        <button id="ButtonOff" type="button" class="btn btn-default">Led OFF</button>
+                        <button id="ButtonArming" type="button" class="btn btn-default">Arming</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="live" class="projects-section bg-light" style="padding-top: 2em;">
+        <div class="container">
+
+            <!-- Featured Project Row -->
+            <div class="row align-items-center no-gutters mb-4 mb-lg-5">
+                <div class="col-xl-4 col-lg-4">
+                    <img class="img-fluid mb-3 mb-lg-0" src="img/joconde.jpg" style="height:500px">
+                </div>
+                <div class="col-xl-8 col-lg-8">
+                    <div class="featured-text text-center text-lg-left">
+                        <h4>Surveillance en temps réel</h4>
+                        <p class="text-black-50 mb-0"><a href="#live" id="showData">Cliquez ici pour afficher le détail des données reçues</a> afin de voir chaque information en temps réel ou visualisez les graphs plus bas.
+                            <ul id="ws" style="display:none">
+                            </ul>
+                        </p>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project One Row -->
+            <div class="row justify-content-center no-gutters mb-5 mb-lg-0">
+                <div class="col-lg-8">
+                    <div id="chartContainer" style="height: 370px; width:100%;"></div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="bg-black text-center h-100 project">
+                        <div class="d-flex h-100">
+                            <div class="project-text w-100 my-auto text-center text-lg-left">
+                                <h4 class="text-white">Température et Humidité</h4>
+                                <p class="mb-0 text-white-50">Pour une conservation optimale du tableau, il faut conserver la température en dessous de XX°C et l'humidité en dessous de XX%.</p>
+                                <hr class="d-none d-lg-block mb-0 ml-0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Two Row -->
+            <div class="row justify-content-center no-gutters">
+                <div class="col-lg-8">
+                    <div id="chartContainer3" style="height: 370px; width:100%;"></div>
+                </div>
+                <div class="col-lg-4 order-lg-first">
+                    <div class="bg-black text-center h-100 project">
+                        <div class="d-flex h-100">
+                            <div class="project-text w-100 my-auto text-center text-lg-right">
+                                <h4 class="text-white">Position dans l'espace</h4>
+                                <p class="mb-0 text-white-50">Afin d'éviter tout vol, la stabilité de chaque axe est primordial. Tout écart en norme d'une valeur relative de +50 déclanchera une alerte.</p>
+                                <hr class="d-none d-lg-block mb-0 mr-0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Signup Section -->
+    <section id="pastdata" class="signup-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-10 col-lg-8 mx-auto text-center">
+
+                    <i class="far fa-clock fa-2x mb-2 text-white"></i>
+                    <h2 class="text-white mb-5">Bilan d'une journée passée</h2>
+
+                    <form class="form-inline d-flex">
+                        <input type="text" name="inputDate" id="inputDate" class="form-control flex-fill mr-0 mr-sm-2 mb-3 mb-sm-0" placeholder="Quel jour voulez-vous surveiller ?" />
+                        <button id="Search" class="btn btn-primary mx-auto"><i class="fas fa-search"></i> Search</button>
+                    </form>
+
+                    <div id="chartContainer2" style="height: 370px; width:100%;"></div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section bg-black">
+        <div class="container">
+
+            <div class="row">
+
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="card py-4 h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-map-marked-alt text-primary mb-2"></i>
+                            <h4 class="text-uppercase m-0">Adresse</h4>
+                            <hr class="my-4">
+                            <div class="small text-black-50">Rue de Rivoli, 75001 Paris</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="card py-4 h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-envelope text-primary mb-2"></i>
+                            <h4 class="text-uppercase m-0">Email</h4>
+                            <hr class="my-4">
+                            <div class="small text-black-50">
+                                <a href="mailto:tityb49@gmail.com">tityb49@gmail.com</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="card py-4 h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-mobile-alt text-primary mb-2"></i>
+                            <h4 class="text-uppercase m-0">Téléphone</h4>
+                            <hr class="my-4">
+                            <div class="small text-black-50">+33 6 37 29 88 15</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="social d-flex justify-content-center">
+                <a href="https://github.com/Boraillie/IOTworkshops" class="mx-2">
+                    <i class="fab fa-github"></i>
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-black small text-center text-white-50">
+        <div class="container">
+            Copyright &copy; Louvre Security 2018
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Plugin JavaScript -->
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="js/grayscale.min.js"></script>
+
+
+
+    <script>
+        window.onload = function() {
+
+            var dpsTemp = []; // dataPoints
+            var dpsHum = []; // dataPoints
+            var dpsX = [];
+            var dpsY = [];
+            var dpsZ = [];
+
+            var chart = new CanvasJS.Chart("chartContainer", {
+                title: {
+                    text: "Environnement du tableau"
+                },
+                axisY: {
+                    includeZero: false,
+                    title: "Valeur Mesurée"
+                },
+                data: [{
+                    name: "Temperature",
+                    type: "spline",
+                    yValueFormatString: "#0.## °C",
+                    showInLegend: true,
+                    dataPoints: dpsTemp,
+                }, {
+                    name: "Humidity",
+                    type: "spline",
+                    yValueFormatString: "#0.## %",
+                    showInLegend: true,
+                    dataPoints: dpsHum,
+                }]
+            });
+            var chart3 = new CanvasJS.Chart("chartContainer3", {
+                title: {
+                    text: "Mouvements du tableau"
+                },
+                axisY: {
+                    includeZero: false,
+                    title: "Position sur l'axe"
+                },
+                data: [{
+                    name: "X",
+                    type: "spline",
+                    showInLegend: true,
+                    dataPoints: dpsX,
+                }, {
+                    name: "Y",
+                    type: "spline",
+                    showInLegend: true,
+                    dataPoints: dpsY,
+                }, {
+                    name: "Z",
+                    type: "spline",
+                    showInLegend: true,
+                    dataPoints: dpsZ,
+                }]
+            });
+
+            var xVal = 0;
+            var updateInterval = 1000;
+            var dataLength = 60; // number of dataPoints visible at any point
+
+            var updateChart = function(count) {
+
+                dpsTemp.push({
+                    x: xVal,
+                    y: tempVal
+                });
+                dpsHum.push({
+                    x: xVal,
+                    y: humVal
+                });
+                dpsX.push({
+                    x: xVal,
+                    y: accXVal
+                });
+                dpsY.push({
+                    x: xVal,
+                    y: accYVal
+                });
+                dpsZ.push({
+                    x: xVal,
+                    y: accZVal
+                });
+                xVal++;
+
+                if (dpsTemp.length > dataLength) {
+                    dpsTemp.shift();
+                }
+                if (dpsHum.length > dataLength) {
+                    dpsHum.shift();
+                }
+                if (dpsX.length > dataLength) {
+                    dpsX.shift();
+                    dpsY.shift();
+                    dpsZ.shift();
+                }
+
+                chart.render();
+                chart3.render();
+            };
+
+            updateChart(dataLength);
+            setInterval(function() {
+                updateChart()
+            }, updateInterval);
+
+        }
+
+
+
+        function traceDay(dataFromDb) {
+            var dps2Temp = []; // dataPoints
+            var dps2Hum = [];
+
+            dataFromDb.Temp.forEach(function(element) {
+                var dateArray = element.date.split('/');
+                var timeArray = element.time.split(':');
+                var timeValue = 3600 * parseInt(timeArray[0]) + 60 * parseInt(timeArray[1]) + parseInt(timeArray[2]);
+                dps2Temp.push({
+                    //x: timeValue,
+                    x: new Date(dateArray[2], dateArray[0], dateArray[1], timeArray[0], timeArray[1], timeArray[2]),
+                    y: parseFloat(element.temp)
+                });
+            });
+            dataFromDb.Hum.forEach(function(element) {
+                var dateArray = element.date.split('/');
+                var timeArray = element.time.split(':');
+                var timeValue = 3600 * parseInt(timeArray[0]) + 60 * parseInt(timeArray[1]) + parseInt(timeArray[2]);
+                dps2Hum.push({
+                    //x: timeValue,
+                    x: new Date(dateArray[2], dateArray[0], dateArray[1], timeArray[0], timeArray[1], timeArray[2]),
+                    y: parseFloat(element.hum)
+                });
+            });
+
+            var chart2 = new CanvasJS.Chart("chartContainer2", {
+                title: {
+                    text: "Data of the Day searched"
+                },
+                axisY: {
+                    includeZero: false,
+                    title: "Measured Value"
+                },
+                axisX: {
+                    valueFormatString: "HH:mm:ss",
+                    labelAngle: -50,
+                    title: "Temps (HH:MM:SS)"
+                },
+
+                data: [{
+                    name: "Temperature",
+                    type: "spline",
+                    yValueFormatString: "#0.## °C",
+                    showInLegend: true,
+                    dataPoints: dps2Temp,
+                }, {
+                    name: "Humidity",
+                    type: "spline",
+                    yValueFormatString: "#0.## %",
+                    showInLegend: true,
+                    dataPoints: dps2Hum,
+                }]
+            });
+
+            if (dataFromDb.Temp > 0 || dataFromDb.Hum.length > 0)
+                chart2.render();
+
+        }
+    </script>
+
+</body>
+
+<script>
+    $("#ButtonOn").click(function() {
+        mqtt.send('Boraillie/led', 'ON');
+    });
+    $("#ButtonOff").click(function() {
+        mqtt.send('Boraillie/led', 'OFF');
+    });
+    $("#ButtonArming").click(function() {
+        document.getElementById('ButtonArming').setAttribute('class', 'btn btn-primary');
+        mqtt.send('Boraillie/arming', '1');
+        mqtt.send('Boraillie/led', 'ON');
+        setTimeout(function() {
+            mqtt.send('Boraillie/led', 'OFF');
+        }, 300);
+        setTimeout(function() {
+            mqtt.send('Boraillie/led', 'ON');
+        }, 600);
+        setTimeout(function() {
+            mqtt.send('Boraillie/led', 'OFF');
+        }, 900);
+        setTimeout(function() {
+            mqtt.send('Boraillie/led', 'ON');
+        }, 1200);
+        arming = true;
+        intrusion = false;
+    });
+    $("#Search").click(function() {
+        var dateToSearch = document.getElementById("inputDate").value;
+        var m = dateToSearch.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (m) {
+            mqtt.send('Boraillie/query', dateToSearch);
+        } else {
+            alert("La date doit \352tre au format JJ/MM/AAAA");
+        }
+
+    });
+
+    $(document).ready(function() {
+        //toggle sections card on clicking
+        $("#showData").click(function() {
+            $("#ws").toggle();
+        });
+    });
+</script>
+
+</html>
